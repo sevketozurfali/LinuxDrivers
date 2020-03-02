@@ -1,0 +1,21 @@
+#include <linux/init.h>
+#include <linux/module.h>
+
+int count = 1;
+int ex06_simple_module_init(void)
+{
+	int index = 0;
+	
+	printk(KERN_ALERT "Inside the %s function\n",__FUNCTION__);
+	for(index = 0
+ 
+	return 0;
+}
+
+void ex06_simple_module_exit(void){
+	printk(KERN_ALERT "Inside the %s function\n",__FUNCTION__);
+}
+
+module_init(ex06_simple_module_init);
+module_exit(ex06_simple_module_exit);
+
