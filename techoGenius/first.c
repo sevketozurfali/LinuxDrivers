@@ -42,7 +42,7 @@ static int my_open(struct inode *inode, struct file *file){
     return 0;
 }
 
-static my_release(struct inode *inode, struct file *file){
+static int my_release(struct inode *inode, struct file *file){
     kfree(kernel_buffer);
     printk(KERN_INFO "Device file closed.. \n");
     return 0;
@@ -82,7 +82,7 @@ static int __init chr_driver_init(void){
     }
 
     //  creating struct class 
-    if((dev_class == class_create(THIS_MODULE,"my_class")) == NULL){
+    if((dev_class = class_create(THIS_MODULE,"my_class")) == NULL){
         printk(KERN_INFO"Cannot create struct device \n");
         goto r_class;
     }

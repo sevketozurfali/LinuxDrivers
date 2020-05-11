@@ -13,13 +13,14 @@ int main(){
 	int fd;
 	char option;
 
-	printf("welcome to the demo of character device driver....");
+	printf("welcome to the demo of character device driver....\n");
 
 	fd = open("/dev/my_device",O_RDWR);
 
 	if(fd < 0){
 
-		printf("Cannot open the device file");
+		printf("Cannot open the device file \n");
+		return 0;
 
 	}
 
@@ -38,10 +39,25 @@ int main(){
 			scanf("%[^\t\n]s", write_buf);
 			printf("Data written.\n");
 			write(fd, write_buf, strlen(write_buf) + 1);
-			printf("Done");
+			printf("Done\n");
+			break;
 			case '2':
+			printf("Data reading....");
+			read(fd,read_buf, 1024);
+			printf("Done .... \n\n");
+			printf("Data = %s\n\n", read_buf);
+			break;
+			case '3':
+			close(fd);
+			exit(1);
+			break;
+			default:
+			printf("Enter  valid option = %c\n", option);
+			break;
 
 		}
 
 	}
+	close(fd);
+}
 	
