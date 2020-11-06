@@ -8,8 +8,15 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/ioctl.h>
+
 
 #define mem_size 1024
+
+#define WR_DATA _IOW('a','a',int32_t*)
+#define RD_DATA _IOR('a','a',int32_t*)
+
+int32_t val = 0;
 
 
 dev_t dev = 0;
@@ -24,13 +31,15 @@ static int techo_open (struct inode *tinode, struct file *tfile);
 static ssize_t techo_read (struct file *tfile, char __user *buf, size_t len, loff_t *off);
 static ssize_t techo_write (struct file *tfile, const char __user *buf, size_t len, loff_t *off);
 static int techo_release (struct inode *tinode, struct file *tfile);
+static long techo_ioctl(struct file *tfile, unsigned int cmd, unsigned long arg);
 
 static struct file_operations fops = {
-    .owner      =   THIS_MODULE,
-    .read       =   techo_read,
-    .write      =   techo_write,
-    .open       =   techo_open,
-    .release    =   techo_release
+    .owner          =   THIS_MODULE,
+    .read           =   techo_read,
+    .write          =   techo_write,
+    .open           =   techo_open,
+    .unlocked_ioctl =   techo_ioctl,
+    .release        =   techo_release
 };
 
 
@@ -62,6 +71,24 @@ static ssize_t techo_write (struct file *tfile, const char __user *buf, size_t l
     return len;
 }
 
+
+static long techo_ioctl(struct file *tfile, unsigned int cmd, unsigned long arg){
+    switch (cmd)
+    {
+    case WR_DATA:
+        copy_from_user(&val, (int32_t*)arg, sizeof(val));
+        printk(KERN_INFO "Val : %d \n",val);
+        break;
+    case RD_DATA:
+        copy_to_user((int32_t*)arg, &val, sizeof(val));
+        break;
+    
+    default:
+        break;
+    }
+
+    return 0;
+}
 
 static int __init chr_driver_init(void){
     /* allocating major number*/
