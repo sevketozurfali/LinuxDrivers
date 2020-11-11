@@ -9,18 +9,28 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/ioctl.h>
-#include <linux/proc_fs.h>
+#include <linux/interrupt.h>
+#include <asm/io.h>
 
 
 
 #define mem_size 1024
+#define IRQ_NO 1
+unsigned int i = 0;
 
 #define WR_DATA _IOW('a','a',int32_t*)
 #define RD_DATA _IOR('a','a',int32_t*)
 
 int32_t val = 0;
-char chr_array[40] = "Welcome to the TechoProcDriver....\n";
-static int len = 1;
+
+static irqreturn_t irq_handler(int irq, void *dev_id){
+    printk(KERN_INFO "Keyboard interrupt occured. %d \n", i);
+    i++;
+    return IRQ_HANDLED;
+
+}
+
+volatile int chr_value = 0;
 
 dev_t dev = 0;
 static struct class *dev_class;
@@ -36,11 +46,6 @@ static ssize_t techo_write (struct file *tfile, const char __user *buf, size_t l
 static int techo_release (struct inode *tinode, struct file *tfile);
 static long techo_ioctl(struct file *tfile, unsigned int cmd, unsigned long arg);
 
-static int proc_open(struct inode *pinode, struct file *pfile);
-static ssize_t proc_read(struct file *pfile, char __user *buf, size_t length, loff_t *off);
-static ssize_t proc_write (struct file *pfile, const char *buf, size_t length, loff_t *off);
-static int proc_release (struct inode *pinode, struct file *pfile);
-
 static struct file_operations fops = {
     .owner          =   THIS_MODULE,
     .read           =   techo_read,
@@ -50,45 +55,6 @@ static struct file_operations fops = {
     .release        =   techo_release
 };
 
-
-static struct file_operations proc_fops = {
-    .open       =   proc_open,
-    .write      =   proc_write,
-    .read       =   proc_read,
-    .release    =   proc_release
-};
-
-static int proc_open(struct inode *pinode, struct file *pfile){
-    printk(KERN_INFO "Proc file opened.\n");
-    return 0;
-}
-
-static ssize_t proc_read(struct file *pfile, char __user *buf, size_t length, loff_t *off){
-    printk(KERN_INFO "proc file is reading...\n");
-
-    if(len){
-        len = 0;
-    }
-    else
-    {
-        len = 1;
-        return 0;
-    }
-
-    copy_to_user(buf,chr_array,40);
-    return length;
-}
-
-static ssize_t proc_write (struct file *pfile, const char *buf, size_t len, loff_t *off){
-    printk(KERN_INFO "Proc file writing...\n");
-    copy_from_user(chr_array, buf, len);
-    return len;
-}
-
-static int proc_release (struct inode *pinode, struct file *pfile){
-    printk(KERN_INFO "Proc file releaased...\n");
-    return 0;
-}
 
 static int techo_open(struct inode *tinode, struct file *tfile){
     if((kernel_buffer = kmalloc(mem_size, GFP_KERNEL) ) == 0){
@@ -175,10 +141,17 @@ static int __init chr_driver_init(void){
         goto r_device;
     }
 
-    proc_create("techo_proc", 0666, NULL, &proc_fops);
+    if(request_irq(IRQ_NO, irq_handler, IRQF_SHARED, "techo_device", (void *)(irq_handler))){
+        printk(KERN_INFO "techo device can not register irq\n");
+        goto irq;
+    }
 
     printk(KERN_INFO "Device driver insert.. done properly....");
     return 0;
+
+
+    irq:
+        free_irq(IRQ_NO,(void *)(irq_handler));
 
     r_device:
         class_destroy(dev_class);
@@ -191,6 +164,7 @@ static int __init chr_driver_init(void){
 }
 
 void __exit chr_driver_exit(void){
+    free_irq(IRQ_NO,(void *)(irq_handler));
     device_destroy(dev_class,dev);
     class_destroy(dev_class);
     cdev_del(&techo_cdev);
