@@ -18,11 +18,12 @@
 #define IRQ_NO 1
 unsigned int i = 0;
 
+struct tasklet_struct *tasklet;
 void tasklet_func(unsigned long data);
 
 /*Declare the tasklet */
 
-DECLARE_TASKLET(tasklet,tasklet_func,1);
+// DECLARE_TASKLET(tasklet,tasklet_func,1);
 
 #define WR_DATA _IOW('a','a',int32_t*)
 #define RD_DATA _IOR('a','a',int32_t*)
@@ -31,7 +32,7 @@ int32_t val = 0;
 
 static irqreturn_t irq_handler(int irq, void *dev_id){
     printk(KERN_INFO "Keyboard interrupt occured. %d \n", i);
-    tasklet_schedule(&tasklet);
+    tasklet_schedule(tasklet);
     i++;
     return IRQ_HANDLED;
 
@@ -64,7 +65,7 @@ static struct file_operations fops = {
 
 
 void tasklet_func(unsigned long data){
-    printk(KERN_INFO "Tasklet function executed.");
+    printk(KERN_INFO "Tasklet function executed. data : %ld",data);
 }
 
 static int techo_open(struct inode *tinode, struct file *tfile){
@@ -157,25 +158,34 @@ static int __init chr_driver_init(void){
         goto irq;
     }
 
+    tasklet = kmalloc(sizeof(struct tasklet_struct),GFP_KERNEL);
+    if(tasklet == NULL){
+        printk(KERN_INFO "Cannot allocate memory for the tasklet.");
+        goto irq;
+    }
+
+    tasklet_init(tasklet,tasklet_func,0);
+
     printk(KERN_INFO "Device driver insert.. done properly....");
     return 0;
 
 
-    irq:
-        free_irq(IRQ_NO,(void *)(irq_handler));
+irq:
+    free_irq(IRQ_NO,(void *)(irq_handler));
 
-    r_device:
-        class_destroy(dev_class);
+r_device:
+    class_destroy(dev_class);
 
 
-    r_class:
-        unregister_chrdev_region(dev, 1);
-        return -1;
+r_class:
+    unregister_chrdev_region(dev, 1);
+    return -1;
 
 }
 
 void __exit chr_driver_exit(void){
     free_irq(IRQ_NO,(void *)(irq_handler));
+    tasklet_kill(tasklet);
     device_destroy(dev_class,dev);
     class_destroy(dev_class);
     cdev_del(&techo_cdev);
