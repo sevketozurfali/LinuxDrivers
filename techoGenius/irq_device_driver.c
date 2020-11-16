@@ -18,6 +18,12 @@
 #define IRQ_NO 1
 unsigned int i = 0;
 
+void tasklet_func(unsigned long data);
+
+/*Declare the tasklet */
+
+DECLARE_TASKLET(tasklet,tasklet_func,1);
+
 #define WR_DATA _IOW('a','a',int32_t*)
 #define RD_DATA _IOR('a','a',int32_t*)
 
@@ -25,6 +31,7 @@ int32_t val = 0;
 
 static irqreturn_t irq_handler(int irq, void *dev_id){
     printk(KERN_INFO "Keyboard interrupt occured. %d \n", i);
+    tasklet_schedule(&tasklet);
     i++;
     return IRQ_HANDLED;
 
@@ -55,6 +62,10 @@ static struct file_operations fops = {
     .release        =   techo_release
 };
 
+
+void tasklet_func(unsigned long data){
+    printk(KERN_INFO "Tasklet function executed.");
+}
 
 static int techo_open(struct inode *tinode, struct file *tfile){
     if((kernel_buffer = kmalloc(mem_size, GFP_KERNEL) ) == 0){
