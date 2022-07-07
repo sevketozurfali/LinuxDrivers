@@ -14,3 +14,5 @@ obj-m += ex05_using_symbols.o
 obj-m := ex06_module_param.o
 
 obj-m := ex07_simple_char_drv.o
+
+obj+m := real_simple_char_drv.o
