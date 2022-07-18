@@ -8,6 +8,9 @@
 #include <linux/cdev.h>
 #include <asm/uaccess.h>
 #include <linux/fs.h>
+#include <linux/kdev_t.h>
+#include <linux/uaccess.h>
+
 
 struct i2c_data{
     struct i2c_client *client;
@@ -44,7 +47,7 @@ static ssize_t my_write(struct file *filp, const char *buf, size_t len, loff_t *
 
     temp = memdup_user(buf, len);
 
-    msg.addr = 0x48;
+    msg.addr = 0x23;
     msg.flags = 0;
     msg.len = len;
     msg.buf = temp;
@@ -64,7 +67,7 @@ static ssize_t my_read(struct file *filp, char __user *buf, size_t len, loff_t *
 
     temp = kmalloc(len, GFP_KERNEL);
 
-    msg.addr = 0x48;
+    msg.addr = 0x23;
     msg.flags = 0;
     msg.flags |= I2C_M_RD;
     msg.len = len;
@@ -127,7 +130,7 @@ static int ads1115_probe(struct i2c_client *client, const struct i2c_device_id *
         return -1;
     }
 
-    if(device_create(data->class, NULL, data->dev, NULL, "i2c_drv%d", 3) == NULL){
+    if(device_create(data->class, NULL, data->dev, NULL, "i2c_drv%d", 2) == NULL){
         printk(KERN_ALERT"Unable to create the device...\n");
         class_destroy(data->class);
         unregister_chrdev_region(data->dev, 1);

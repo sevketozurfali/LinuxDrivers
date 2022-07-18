@@ -1,0 +1,1 @@
+obj-m := simple_driver.o
