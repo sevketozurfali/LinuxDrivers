@@ -1,3 +1,6 @@
 System logs command : 
 tail -f /var/log/syslog
+dmesg | tail
 
+Driver Compile Command (Sample) :
+make ARCH=arm CROSS_COMPILE=/emlin/rootfs/build/fs-br-202011-nongui-wofs-ads1115/host/bin/arm-buildroot-linux-gnueabihf- -C /emlin/linux/build/linux-5914-nongui-wofs-ads1115/ M=$PWD modules
